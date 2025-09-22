@@ -11,6 +11,7 @@ const rolesRoutes = require('./routes/roles');
 const casosRoutes = require('./routes/casos');
 const seguimientosRoutes = require('./routes/seguimientos');
 const adjuntosRoutes = require('./routes/adjuntos');
+const emailRoutes = require('./routes/email');
 //const authADRoutes = require('./routes/authAD');
 
 const swaggerJsdoc = require('swagger-jsdoc');
@@ -64,6 +65,7 @@ app.use('/api/roles', rolesRoutes);
 app.use('/api/casos', casosRoutes);
 app.use('/api/seguimientos', seguimientosRoutes);
 app.use('/api/adjuntos', adjuntosRoutes);
+app.use('/api/email', emailRoutes);
 //app.use("/auth", authADRoutes);
 
 // health
