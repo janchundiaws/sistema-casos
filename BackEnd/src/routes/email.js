@@ -1,11 +1,11 @@
 const express6 = require('express');
-const { sendEmail } = require("../services/emailService.js");
+const { sendEmail } = require("../services/emailService");
 
 const routerEmail = express6.Router();
 
 /**
  * @swagger
- * /email/send:
+ * /api/email/send:
  *   post:
  *     summary: Enviar un correo electrónico
  *     tags: [Email]
@@ -18,7 +18,7 @@ const routerEmail = express6.Router();
  *             properties:
  *               to:
  *                 type: string
- *                 example: destinatario@empresa.comS
+ *                 example: destinatario@empresa.com
  *               subject:
  *                 type: string
  *                 example: Seguimiento de Caso
@@ -42,7 +42,7 @@ routerEmail.post("/send", async (req, res) => {
     res.json({ message: "Correo enviado correctamente", result });
   } catch (error) {
     console.error("Error enviando correo:", error.message);
-    res.status(500).json({ error: "Error enviando correo" });
+    res.status(500).json({ error: "Error enviando correo", details: error.message });
   }
 });
 

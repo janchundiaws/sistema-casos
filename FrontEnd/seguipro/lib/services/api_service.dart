@@ -180,6 +180,28 @@ class ApiService {
     }
   }
 
+  // Email
+  Future<Map<String, dynamic>> sendEmail({
+    required String to,
+    required String subject,
+    String? text,
+    String? html,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/email/send',
+        data: {'to': to, 'subject': subject, 'text': text, 'html': html},
+      );
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        return data;
+      }
+      return {'message': 'Correo enviado correctamente'};
+    } catch (e) {
+      throw Exception('Error enviando correo: $e');
+    }
+  }
+
   // Adjuntos
   Future<int> subirAdjunto({
     required File file,

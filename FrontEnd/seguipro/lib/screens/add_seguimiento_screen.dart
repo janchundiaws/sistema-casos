@@ -6,6 +6,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import '../services/api_service.dart';
+import 'package:intl/intl.dart';
 
 // Clase para manejar archivos en web
 class WebFile {
@@ -46,6 +47,135 @@ class _AddSeguimientoScreenState extends State<AddSeguimientoScreen> {
   void dispose() {
     _retroalimentacionController.dispose();
     super.dispose();
+  }
+
+  Future<void> _showSendEmailDialog({
+    String toPrefill = '',
+    required String subjectPrefill,
+    String? defaultHtml,
+  }) async {
+    final toController = TextEditingController(text: toPrefill);
+    final subjectController = TextEditingController(text: subjectPrefill);
+    final bodyController = TextEditingController(text: defaultHtml ?? '');
+    String? emailError;
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Enviar correo'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: toController,
+                  decoration: InputDecoration(
+                    labelText: 'Para (correo)',
+                    errorText: emailError,
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: subjectController,
+                  decoration: const InputDecoration(labelText: 'Asunto'),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: bodyController,
+                  decoration: const InputDecoration(
+                    labelText: 'Contenido (HTML)',
+                  ),
+                  maxLines: 6,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final email = toController.text.trim();
+                final subject = subjectController.text.trim();
+                if (email.isEmpty || !_isValidEmail(email)) {
+                  setState(() {
+                    emailError = email.isEmpty
+                        ? 'El correo es obligatorio'
+                        : 'Correo inválido';
+                  });
+                  return;
+                }
+
+                Navigator.of(context).pop();
+                try {
+                  final resp = await _apiService.sendEmail(
+                    to: email,
+                    subject: subject,
+                    html: bodyController.text,
+                  );
+                  if (mounted) {
+                    final String msg =
+                        (resp['message'] ?? 'Correo enviado correctamente')
+                            .toString();
+                    final String messageId =
+                        (resp['result']?['messageId'] ?? '').toString();
+                    final List<dynamic> accepted =
+                        (resp['result']?['accepted'] as List?) ?? [];
+                    final List<dynamic> rejected =
+                        (resp['result']?['rejected'] as List?) ?? [];
+
+                    await showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Resultado del envío'),
+                        content: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(msg),
+                            const SizedBox(height: 8),
+                            if (messageId.isNotEmpty) Text('ID: $messageId'),
+                            if (accepted.isNotEmpty)
+                              Text('Aceptados: ${accepted.join(', ')}'),
+                            if (rejected.isNotEmpty)
+                              Text('Rechazados: ${rejected.join(', ')}'),
+                          ],
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: const Text('Cerrar'),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error enviando correo: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+              child: const Text('Enviar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  bool _isValidEmail(String email) {
+    final regex = RegExp(r'^\S+@\S+\.\S+$');
+    return regex.hasMatch(email);
   }
 
   Future<void> _pickFiles() async {
@@ -446,6 +576,40 @@ class _AddSeguimientoScreenState extends State<AddSeguimientoScreen> {
                 : Colors.green,
           ),
         );
+
+        final shouldSend = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Enviar correo'),
+            content: const Text(
+              '¿Deseas enviar un correo con este seguimiento?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('No'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Sí, enviar'),
+              ),
+            ],
+          ),
+        );
+
+        if (shouldSend == true) {
+          final nowStr = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
+          final defaultHtml =
+              '<p><b>Caso #</b> ${widget.idCaso}</p>'
+              '<p><b>Seguimiento:</b> ${_retroalimentacionController.text}</p>'
+              '<p><b>Estado:</b> $_selectedEstado</p>'
+              '<p><b>Fecha:</b> $nowStr</p>';
+          await _showSendEmailDialog(
+            subjectPrefill: 'Seguimiento del caso #${widget.idCaso}',
+            defaultHtml: defaultHtml,
+          );
+        }
+
         widget.onSeguimientoAdded();
         Navigator.of(context).pop();
       }

@@ -46,6 +46,135 @@ class _CasoDetailScreenState extends State<CasoDetailScreen> {
     }
   }
 
+  Future<void> _showSendEmailDialog({
+    required String toPrefill,
+    required String subjectPrefill,
+    String? defaultHtml,
+  }) async {
+    final toController = TextEditingController(text: toPrefill);
+    final subjectController = TextEditingController(text: subjectPrefill);
+    final bodyController = TextEditingController(text: defaultHtml ?? '');
+    String? emailError;
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Enviar correo'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: toController,
+                  decoration: InputDecoration(
+                    labelText: 'Para (correo)',
+                    errorText: emailError,
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: subjectController,
+                  decoration: const InputDecoration(labelText: 'Asunto'),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: bodyController,
+                  decoration: const InputDecoration(
+                    labelText: 'Contenido (HTML)',
+                  ),
+                  maxLines: 6,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final email = toController.text.trim();
+                final subject = subjectController.text.trim();
+                if (email.isEmpty || !_isValidEmail(email)) {
+                  setState(() {
+                    emailError = email.isEmpty
+                        ? 'El correo es obligatorio'
+                        : 'Correo inválido';
+                  });
+                  return;
+                }
+
+                Navigator.of(context).pop();
+                try {
+                  final resp = await _apiService.sendEmail(
+                    to: email,
+                    subject: subject,
+                    html: bodyController.text,
+                  );
+                  if (mounted) {
+                    final String msg =
+                        (resp['message'] ?? 'Correo enviado correctamente')
+                            .toString();
+                    final String messageId =
+                        (resp['result']?['messageId'] ?? '').toString();
+                    final List<dynamic> accepted =
+                        (resp['result']?['accepted'] as List?) ?? [];
+                    final List<dynamic> rejected =
+                        (resp['result']?['rejected'] as List?) ?? [];
+
+                    await showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Resultado del envío'),
+                        content: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(msg),
+                            const SizedBox(height: 8),
+                            if (messageId.isNotEmpty) Text('ID: $messageId'),
+                            if (accepted.isNotEmpty)
+                              Text('Aceptados: ${accepted.join(', ')}'),
+                            if (rejected.isNotEmpty)
+                              Text('Rechazados: ${rejected.join(', ')}'),
+                          ],
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: const Text('Cerrar'),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error enviando correo: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+              child: const Text('Enviar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  bool _isValidEmail(String email) {
+    final regex = RegExp(r'^\S+@\S+\.\S+$');
+    return regex.hasMatch(email);
+  }
+
   Color _getEstadoColor(String estado) {
     switch (estado) {
       case 'Iniciado':
@@ -221,6 +350,33 @@ class _CasoDetailScreenState extends State<CasoDetailScreen> {
                                       ),
                                       fontWeight: FontWeight.bold,
                                     ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  IconButton(
+                                    tooltip:
+                                        'Enviar correo de este seguimiento',
+                                    icon: const Icon(Icons.email),
+                                    color: Theme.of(context).primaryColor,
+                                    onPressed: () async {
+                                      final detalleHtml =
+                                          widget.caso.descripcion != null
+                                          ? '<p><b>Detalle del caso:</b> ${widget.caso.descripcion}</p>'
+                                          : '';
+                                      final contenidoHtml =
+                                          '<p><b>Caso #</b> ${widget.caso.idCaso}</p>'
+                                          '<p><b>Título:</b> ${widget.caso.titulo}</p>'
+                                          '$detalleHtml'
+                                          '<hr />'
+                                          '<p><b>Seguimiento:</b> ${seguimiento['retroalimentacion']}</p>'
+                                          '<p><b>Estado:</b> ${seguimiento['estado']}</p>'
+                                          '<p><b>Fecha:</b> ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.parse(seguimiento['fecha_seguimiento']))}</p>';
+                                      await _showSendEmailDialog(
+                                        toPrefill: '',
+                                        subjectPrefill:
+                                            'Seguimiento del caso #${widget.caso.idCaso}',
+                                        defaultHtml: contenidoHtml,
+                                      );
+                                    },
                                   ),
                                 ],
                               ),
