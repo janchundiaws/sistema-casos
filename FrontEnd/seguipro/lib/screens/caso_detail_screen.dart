@@ -73,7 +73,7 @@ class _CasoDetailScreenState extends State<CasoDetailScreen> {
                   ),
                   keyboardType: TextInputType.emailAddress,
                 ),
-                const SizedBox(height: 8),
+                /*const SizedBox(height: 8),
                 TextField(
                   controller: subjectController,
                   decoration: const InputDecoration(labelText: 'Asunto'),
@@ -85,7 +85,7 @@ class _CasoDetailScreenState extends State<CasoDetailScreen> {
                     labelText: 'Contenido (HTML)',
                   ),
                   maxLines: 6,
-                ),
+                ),*/
               ],
             ),
           ),
@@ -376,6 +376,75 @@ class _CasoDetailScreenState extends State<CasoDetailScreen> {
                                             'Seguimiento del caso #${widget.caso.idCaso}',
                                         defaultHtml: contenidoHtml,
                                       );
+                                    },
+                                  ),
+                                  IconButton(
+                                    tooltip: 'Eliminar seguimiento',
+                                    icon: const Icon(Icons.delete),
+                                    color: Colors.redAccent,
+                                    onPressed: () async {
+                                      final bool?
+                                      confirm = await showDialog<bool>(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          title: const Text(
+                                            'Confirmar eliminación',
+                                          ),
+                                          content: const Text(
+                                            '¿Seguro deseas eliminar este seguimiento?',
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () => Navigator.of(
+                                                context,
+                                              ).pop(false),
+                                              child: const Text('Cancelar'),
+                                            ),
+                                            ElevatedButton(
+                                              onPressed: () => Navigator.of(
+                                                context,
+                                              ).pop(true),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.red,
+                                              ),
+                                              child: const Text('Eliminar'),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                      if (confirm == true) {
+                                        try {
+                                          await _apiService.deleteSeguimiento(
+                                            seguimiento['id_seguimiento'],
+                                          );
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  'Seguimiento eliminado',
+                                                ),
+                                                backgroundColor: Colors.green,
+                                              ),
+                                            );
+                                          }
+                                          await _loadCasoDetalle();
+                                        } catch (e) {
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Error eliminando seguimiento: $e',
+                                                ),
+                                                backgroundColor: Colors.red,
+                                              ),
+                                            );
+                                          }
+                                        }
+                                      }
                                     },
                                   ),
                                 ],

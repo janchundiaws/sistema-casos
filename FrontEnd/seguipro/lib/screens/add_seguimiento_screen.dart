@@ -76,19 +76,19 @@ class _AddSeguimientoScreenState extends State<AddSeguimientoScreen> {
                   ),
                   keyboardType: TextInputType.emailAddress,
                 ),
-                const SizedBox(height: 8),
+                /*const SizedBox(height: 8),
                 TextField(
                   controller: subjectController,
                   decoration: const InputDecoration(labelText: 'Asunto'),
                 ),
                 const SizedBox(height: 8),
-                TextField(
-                  controller: bodyController,
+                TextField(                  
+                  controller: bodyController,                  
                   decoration: const InputDecoration(
                     labelText: 'Contenido (HTML)',
                   ),
                   maxLines: 6,
-                ),
+                ),*/
               ],
             ),
           ),

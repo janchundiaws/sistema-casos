@@ -180,6 +180,14 @@ class ApiService {
     }
   }
 
+  Future<void> deleteSeguimiento(int idSeguimiento) async {
+    try {
+      await _dio.delete('/seguimientos/$idSeguimiento');
+    } catch (e) {
+      throw Exception('Error eliminando seguimiento: $e');
+    }
+  }
+
   // Email
   Future<Map<String, dynamic>> sendEmail({
     required String to,
