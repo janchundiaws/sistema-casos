@@ -23,11 +23,13 @@ class WebFile {
 class AddSeguimientoScreen extends StatefulWidget {
   final int idCaso;
   final VoidCallback onSeguimientoAdded;
+  final List<String>? baseRecipients;
 
   const AddSeguimientoScreen({
     super.key,
     required this.idCaso,
     required this.onSeguimientoAdded,
+    this.baseRecipients,
   });
 
   @override
@@ -51,11 +53,13 @@ class _AddSeguimientoScreenState extends State<AddSeguimientoScreen> {
   }
 
   Future<void> _showSendEmailDialog({
-    String toPrefill = '',
+    required List<String> baseRecipients,
     required String subjectPrefill,
     String? defaultHtml,
   }) async {
-    final toController = TextEditingController(text: toPrefill);
+    final rootContext =
+        context; // usar contexto del widget para diálogos posteriores
+    final toController = TextEditingController(text: '');
     final subjectController = TextEditingController(text: subjectPrefill);
     final bodyController = TextEditingController(text: defaultHtml ?? '');
     String? emailError;
@@ -69,27 +73,32 @@ class _AddSeguimientoScreenState extends State<AddSeguimientoScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (baseRecipients.isNotEmpty) ...[
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Se enviará a:',
+                      style: Theme.of(context).textTheme.labelLarge,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: baseRecipients
+                        .map((e) => Chip(label: Text(e)))
+                        .toList(),
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 TextField(
                   controller: toController,
                   decoration: InputDecoration(
-                    labelText: 'Para (correo)',
+                    labelText: 'Correos adicionales (separar por coma o ;)',
                     errorText: emailError,
                   ),
                   keyboardType: TextInputType.emailAddress,
                 ),
-                /*const SizedBox(height: 8),
-                TextField(
-                  controller: subjectController,
-                  decoration: const InputDecoration(labelText: 'Asunto'),
-                ),
-                const SizedBox(height: 8),
-                TextField(                  
-                  controller: bodyController,                  
-                  decoration: const InputDecoration(
-                    labelText: 'Contenido (HTML)',
-                  ),
-                  maxLines: 6,
-                ),*/
               ],
             ),
           ),
@@ -100,13 +109,23 @@ class _AddSeguimientoScreenState extends State<AddSeguimientoScreen> {
             ),
             ElevatedButton(
               onPressed: () async {
-                final email = toController.text.trim();
+                final additionalRaw = toController.text.trim();
                 final subject = subjectController.text.trim();
-                if (email.isEmpty || !_isValidEmail(email)) {
+                final List<String> additional = additionalRaw
+                    .split(RegExp(r'[;,]'))
+                    .map((s) => s.trim())
+                    .where((s) => s.isNotEmpty)
+                    .toList();
+                final recipients = <String>{
+                  ...baseRecipients,
+                  ...additional,
+                }.toList();
+                if (recipients.isEmpty ||
+                    recipients.any((r) => !_isValidEmail(r))) {
                   setState(() {
-                    emailError = email.isEmpty
-                        ? 'El correo es obligatorio'
-                        : 'Correo inválido';
+                    emailError = recipients.isEmpty
+                        ? 'Debe especificar al menos un correo'
+                        : 'Uno o más correos son inválidos';
                   });
                   return;
                 }
@@ -114,7 +133,7 @@ class _AddSeguimientoScreenState extends State<AddSeguimientoScreen> {
                 Navigator.of(context).pop();
                 try {
                   final resp = await _apiService.sendEmail(
-                    to: email,
+                    to: recipients.join(','),
                     subject: subject,
                     html: bodyController.text,
                   );
@@ -130,7 +149,7 @@ class _AddSeguimientoScreenState extends State<AddSeguimientoScreen> {
                         (resp['result']?['rejected'] as List?) ?? [];
 
                     await showDialog(
-                      context: context,
+                      context: rootContext,
                       builder: (context) => AlertDialog(
                         title: const Text('Resultado del envío'),
                         content: Column(
@@ -157,10 +176,19 @@ class _AddSeguimientoScreenState extends State<AddSeguimientoScreen> {
                   }
                 } catch (e) {
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Error enviando correo: $e'),
-                        backgroundColor: Colors.red,
+                    await showDialog(
+                      context: rootContext,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Error al enviar'),
+                        content: Text(
+                          'No se pudo enviar el correo. Detalle: $e',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: const Text('Cerrar'),
+                          ),
+                        ],
                       ),
                     );
                   }
@@ -605,7 +633,10 @@ class _AddSeguimientoScreenState extends State<AddSeguimientoScreen> {
               '<p><b>Seguimiento:</b> ${_retroalimentacionController.text}</p>'
               '<p><b>Estado:</b> $_selectedEstado</p>'
               '<p><b>Fecha:</b> $nowStr</p>';
+          // Intentar obtener listaCorreo desde el backend del caso (no está en este contexto), usar vacía por defecto
+          final baseRecipients = widget.baseRecipients ?? <String>[];
           await _showSendEmailDialog(
+            baseRecipients: baseRecipients,
             subjectPrefill: 'Seguimiento del caso #${widget.idCaso}',
             defaultHtml: defaultHtml,
           );

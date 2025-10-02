@@ -305,7 +305,7 @@ routerCasos.get('/:id', authMW, async (req, res) => {
     const caso = await pool.request().input('id', id).query('SELECT * FROM Caso WHERE id_caso = @id');
     if (!caso.recordset.length) return res.status(404).json({ message: 'Caso no encontrado' });
 
-    const areas = await pool.request().input('id', id).query(`SELECT a.id_area, a.nombre FROM CasoArea ca JOIN Area a ON ca.id_area = a.id_area WHERE ca.id_caso = @id`);
+    const areas = await pool.request().input('id', id).query(`SELECT a.id_area, a.nombre, a.listaCorreo FROM CasoArea ca JOIN Area a ON ca.id_area = a.id_area WHERE ca.id_caso = @id`);
     const seguimientos = await pool.request().input('id', id).query(`
       SELECT s.*, 
              u.apellidos+' '+u.nombres as usuario,
