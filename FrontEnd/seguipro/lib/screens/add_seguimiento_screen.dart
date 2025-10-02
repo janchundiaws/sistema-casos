@@ -7,6 +7,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import '../services/api_service.dart';
 import 'package:intl/intl.dart';
+import '../widgets/responsive_layout.dart';
 
 // Clase para manejar archivos en web
 class WebFile {
@@ -650,169 +651,254 @@ class _AddSeguimientoScreenState extends State<AddSeguimientoScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
+      body: ResponsiveContainer(
         padding: const EdgeInsets.all(16),
+        maxWidth: 1000,
         child: Form(
           key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextFormField(
-                controller: _retroalimentacionController,
-                decoration: const InputDecoration(
-                  labelText: 'Retroalimentación *',
-                  border: OutlineInputBorder(),
-                  alignLabelWithHint: true,
-                ),
-                maxLines: 6,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'La retroalimentación es requerida';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-
-              DropdownButtonFormField<String>(
-                value: _selectedEstado,
-                decoration: const InputDecoration(
-                  labelText: 'Estado',
-                  border: OutlineInputBorder(),
-                ),
-                items: const [
-                  DropdownMenuItem(value: 'Iniciado', child: Text('Iniciado')),
-                  DropdownMenuItem(
-                    value: 'En proceso',
-                    child: Text('En proceso'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'Finalizado',
-                    child: Text('Finalizado'),
-                  ),
-                ],
-                onChanged: (String? newValue) {
-                  if (newValue != null) {
-                    setState(() {
-                      _selectedEstado = newValue;
-                    });
-                  }
-                },
-              ),
-              const SizedBox(height: 24),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: ResponsiveLayout(
+            mobile: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Archivos Adjuntos',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+                  TextFormField(
+                    controller: _retroalimentacionController,
+                    decoration: const InputDecoration(
+                      labelText: 'Retroalimentación *',
+                      border: OutlineInputBorder(),
+                      alignLabelWithHint: true,
+                    ),
+                    maxLines: 6,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'La retroalimentación es requerida';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: _selectedEstado,
+                    decoration: const InputDecoration(
+                      labelText: 'Estado',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'Iniciado',
+                        child: Text('Iniciado'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'En proceso',
+                        child: Text('En proceso'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Finalizado',
+                        child: Text('Finalizado'),
+                      ),
+                    ],
+                    onChanged: (String? newValue) {
+                      if (newValue != null) {
+                        setState(() {
+                          _selectedEstado = newValue;
+                        });
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  _buildAdjuntosSectionUI(),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _saveSeguimiento,
+                      child: _isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text('Agregar Seguimiento'),
                     ),
                   ),
-                  Column(
+                ],
+              ),
+            ),
+            tablet: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          ElevatedButton.icon(
-                            onPressed: _pickFiles,
-                            icon: const Icon(Icons.attach_file),
-                            label: const Text('Archivos'),
+                      TextFormField(
+                        controller: _retroalimentacionController,
+                        decoration: const InputDecoration(
+                          labelText: 'Retroalimentación *',
+                          border: OutlineInputBorder(),
+                          alignLabelWithHint: true,
+                        ),
+                        maxLines: 10,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'La retroalimentación es requerida';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<String>(
+                        value: _selectedEstado,
+                        decoration: const InputDecoration(
+                          labelText: 'Estado',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'Iniciado',
+                            child: Text('Iniciado'),
                           ),
-                          const SizedBox(width: 8),
-                          ElevatedButton.icon(
-                            onPressed: _pickFilesAlternative,
-                            icon: const Icon(Icons.image),
-                            label: const Text('Imágenes'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue.shade100,
-                            ),
+                          DropdownMenuItem(
+                            value: 'En proceso',
+                            child: Text('En proceso'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'Finalizado',
+                            child: Text('Finalizado'),
                           ),
                         ],
+                        onChanged: (String? newValue) {
+                          if (newValue != null) {
+                            setState(() {
+                              _selectedEstado = newValue;
+                            });
+                          }
+                        },
                       ),
                     ],
                   ),
-                ],
-              ),
-              const SizedBox(height: 8),
-
-              if ((kIsWeb ? _selectedWebFiles.isEmpty : _selectedFiles.isEmpty))
-                const Card(
-                  child: Padding(
-                    padding: EdgeInsets.all(32),
-                    child: Center(
-                      child: Column(
-                        children: [
-                          Icon(Icons.attach_file, size: 48, color: Colors.grey),
-                          SizedBox(height: 8),
-                          Text(
-                            'No hay archivos seleccionados',
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                )
-              else
-                ...(kIsWeb ? _selectedWebFiles : _selectedFiles)
-                    .asMap()
-                    .entries
-                    .map<Widget>((entry) {
-                      final index = entry.key;
-                      if (kIsWeb) {
-                        final webFile = entry.value as WebFile;
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          child: ListTile(
-                            leading: const Icon(Icons.attach_file),
-                            title: Text(webFile.name),
-                            subtitle: Text(
-                              '${(webFile.size / 1024).toStringAsFixed(1)} KB',
-                            ),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _removeFile(index),
-                            ),
-                          ),
-                        );
-                      } else {
-                        final file = entry.value as File;
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          child: ListTile(
-                            leading: const Icon(Icons.attach_file),
-                            title: Text(file.path.split('/').last),
-                            subtitle: Text(
-                              '${(file.lengthSync() / 1024).toStringAsFixed(1)} KB',
-                            ),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _removeFile(index),
-                            ),
-                          ),
-                        );
-                      }
-                    })
-                    .toList(),
-
-              const SizedBox(height: 32),
-
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _saveSeguimiento,
-                  child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('Agregar Seguimiento'),
                 ),
-              ),
-            ],
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildAdjuntosSectionUI(),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _saveSeguimiento,
+                          child: _isLoading
+                              ? const CircularProgressIndicator(
+                                  color: Colors.white,
+                                )
+                              : const Text('Agregar Seguimiento'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildAdjuntosSectionUI() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Archivos Adjuntos',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            Row(
+              children: [
+                ElevatedButton.icon(
+                  onPressed: _pickFiles,
+                  icon: const Icon(Icons.attach_file),
+                  label: const Text('Archivos'),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton.icon(
+                  onPressed: _pickFilesAlternative,
+                  icon: const Icon(Icons.image),
+                  label: const Text('Imágenes'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue.shade100,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if ((kIsWeb ? _selectedWebFiles.isEmpty : _selectedFiles.isEmpty))
+          const Card(
+            child: Padding(
+              padding: EdgeInsets.all(32),
+              child: Center(
+                child: Column(
+                  children: [
+                    Icon(Icons.attach_file, size: 48, color: Colors.grey),
+                    SizedBox(height: 8),
+                    Text(
+                      'No hay archivos seleccionados',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          )
+        else
+          ...(kIsWeb ? _selectedWebFiles : _selectedFiles)
+              .asMap()
+              .entries
+              .map<Widget>((entry) {
+                final index = entry.key;
+                if (kIsWeb) {
+                  final webFile = entry.value as WebFile;
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      leading: const Icon(Icons.attach_file),
+                      title: Text(webFile.name),
+                      subtitle: Text(
+                        '${(webFile.size / 1024).toStringAsFixed(1)} KB',
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () => _removeFile(index),
+                      ),
+                    ),
+                  );
+                } else {
+                  final file = entry.value as File;
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      leading: const Icon(Icons.attach_file),
+                      title: Text(file.path.split('/').last),
+                      subtitle: Text(
+                        '${(file.lengthSync() / 1024).toStringAsFixed(1)} KB',
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () => _removeFile(index),
+                      ),
+                    ),
+                  );
+                }
+              })
+              .toList(),
+      ],
     );
   }
 }

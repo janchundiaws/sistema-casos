@@ -204,12 +204,11 @@ class _CasoDetailScreenState extends State<CasoDetailScreen> {
           ? const Center(child: CircularProgressIndicator())
           : _casoDetalle == null
           ? const Center(child: Text('Error cargando detalle'))
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Información del caso
+          : LayoutBuilder(
+              builder: (context, constraints) {
+                final bool isWide = constraints.maxWidth >= 900;
+
+                final leftColumn = <Widget>[
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -222,7 +221,6 @@ class _CasoDetailScreenState extends State<CasoDetailScreen> {
                                 ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 8),
-
                           if (widget.caso.descripcion != null) ...[
                             Text(
                               widget.caso.descripcion!,
@@ -230,7 +228,6 @@ class _CasoDetailScreenState extends State<CasoDetailScreen> {
                             ),
                             const SizedBox(height: 16),
                           ],
-
                           Row(
                             children: [
                               Chip(
@@ -251,7 +248,6 @@ class _CasoDetailScreenState extends State<CasoDetailScreen> {
                             ],
                           ),
                           const SizedBox(height: 16),
-
                           Text(
                             'Fecha de creación: ${DateFormat('dd/MM/yyyy HH:mm').format(widget.caso.fechaCreacion)}',
                             style: Theme.of(context).textTheme.bodySmall,
@@ -260,10 +256,7 @@ class _CasoDetailScreenState extends State<CasoDetailScreen> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 16),
-
-                  // Áreas asignadas
                   if (_casoDetalle!['areas'] != null &&
                       (_casoDetalle!['areas'] as List).isNotEmpty) ...[
                     Text(
@@ -287,10 +280,10 @@ class _CasoDetailScreenState extends State<CasoDetailScreen> {
                         );
                       }).toList(),
                     ),
-                    const SizedBox(height: 16),
                   ],
+                ];
 
-                  // Seguimientos
+                final rightColumn = <Widget>[
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -316,7 +309,6 @@ class _CasoDetailScreenState extends State<CasoDetailScreen> {
                     ],
                   ),
                   const SizedBox(height: 8),
-
                   if (_casoDetalle!['seguimientos'] != null &&
                       (_casoDetalle!['seguimientos'] as List).isNotEmpty)
                     ...(_casoDetalle!['seguimientos'] as List).map<Widget>((
@@ -522,10 +514,7 @@ class _CasoDetailScreenState extends State<CasoDetailScreen> {
                         ),
                       ),
                     ),
-
                   const SizedBox(height: 16),
-
-                  // Adjuntos
                   Text(
                     'Archivos Adjuntos',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -533,7 +522,6 @@ class _CasoDetailScreenState extends State<CasoDetailScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-
                   if (_casoDetalle!['adjuntos'] != null &&
                       (_casoDetalle!['adjuntos'] as List).isNotEmpty)
                     ...(_casoDetalle!['adjuntos'] as List).map<Widget>((
@@ -553,7 +541,6 @@ class _CasoDetailScreenState extends State<CasoDetailScreen> {
                           trailing: IconButton(
                             icon: const Icon(Icons.download),
                             onPressed: () {
-                              // TODO: Implementar descarga de archivos
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text(
@@ -578,8 +565,39 @@ class _CasoDetailScreenState extends State<CasoDetailScreen> {
                         ),
                       ),
                     ),
-                ],
-              ),
+                ];
+
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: isWide
+                      ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: leftColumn,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: rightColumn,
+                              ),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ...leftColumn,
+                            const SizedBox(height: 16),
+                            ...rightColumn,
+                          ],
+                        ),
+                );
+              },
             ),
     );
   }
