@@ -21,7 +21,8 @@ IF OBJECT_ID('Area', 'U') IS NOT NULL DROP TABLE Area;
 CREATE TABLE Area (
     id_area INT IDENTITY(1,1) PRIMARY KEY,
     nombre NVARCHAR(100) NOT NULL,
-    descripcion NVARCHAR(255) NULL
+    descripcion NVARCHAR(255) NULL,
+    listaCorreo NVARCHAR(MAX) NULL
 );
 
 -- =============================================

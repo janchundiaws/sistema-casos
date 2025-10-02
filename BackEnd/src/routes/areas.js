@@ -45,7 +45,7 @@ const { authenticateToken: authMiddleware } = require('../middleware/auth');
 routerAreas.get('/', async (req, res) => {
   try {
     const pool = await poolP2;
-    const result = await pool.request().query('SELECT id_area, nombre, descripcion FROM Area');
+    const result = await pool.request().query('SELECT id_area, nombre, descripcion, listaCorreo FROM Area');
     res.json(result.recordset);
   } catch (err) {
     console.error(err);
@@ -77,6 +77,9 @@ routerAreas.get('/', async (req, res) => {
  *               descripcion:
  *                 type: string
  *                 example: "Área encargada de gestión de personal"
+ *               listaCorreo:
+ *                 type: string
+ *                 example: "correo1@example.com;correo2@example.com"
  *     responses:
  *       200:
  *         description: Área creada exitosamente
@@ -95,12 +98,13 @@ routerAreas.get('/', async (req, res) => {
  */
 routerAreas.post('/', authMiddleware, async (req, res) => {
   try {
-    const { nombre, descripcion } = req.body;
+    const { nombre, descripcion, listaCorreo } = req.body;
     const pool = await poolP2;
     const result = await pool.request()
       .input('nombre', nombre)
       .input('descripcion', descripcion || null)
-      .query('INSERT INTO Area (nombre, descripcion) VALUES (@nombre, @descripcion); SELECT SCOPE_IDENTITY() as id_area;');
+      .input('listaCorreo', listaCorreo || null)
+      .query('INSERT INTO Area (nombre, descripcion, listaCorreo) VALUES (@nombre, @descripcion, @listaCorreo); SELECT SCOPE_IDENTITY() as id_area;');
     res.json({ id_area: result.recordset[0].id_area });
   } catch (err) {
     console.error(err);
