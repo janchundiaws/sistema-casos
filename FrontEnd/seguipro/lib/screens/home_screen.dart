@@ -252,97 +252,16 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _buildColumnLayout(),
+            ),
+          ),
 
           // Lista de casos
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _casos.isEmpty
-                ? const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.assignment_outlined,
-                          size: 64,
-                          color: Colors.grey,
-                        ),
-                        SizedBox(height: 16),
-                        Text(
-                          'No hay casos disponibles',
-                          style: TextStyle(fontSize: 18, color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _casos.length,
-                    itemBuilder: (context, index) {
-                      final caso = _casos[index];
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: ListTile(
-                          title: Text(
-                            caso.titulo,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (caso.descripcion != null)
-                                Text(
-                                  caso.descripcion!,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  Chip(
-                                    label: Text(caso.estado),
-                                    backgroundColor: _getEstadoColor(
-                                      caso.estado,
-                                    ).withOpacity(0.2),
-                                    labelStyle: TextStyle(
-                                      color: _getEstadoColor(caso.estado),
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Chip(
-                                    label: Text(caso.tipo),
-                                    backgroundColor: Colors.grey.withOpacity(
-                                      0.2,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              if (caso.areasAsignadas != null)
-                                Text(
-                                  'Áreas: ${caso.areasAsignadas}',
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                              Text(
-                                'Creado: ${_formatDate(caso.fechaCreacion)}',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ],
-                          ),
-                          trailing: const Icon(Icons.arrow_forward_ios),
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    CasoDetailScreen(caso: caso),
-                              ),
-                            );
-                          },
-                        ),
-                      );
-                    },
-                  ),
-          ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
@@ -358,6 +277,185 @@ class _HomeScreenState extends State<HomeScreen> {
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  Widget _buildColumnLayout() {
+    final List<Caso> iniciados = _casos
+        .where((c) => c.estado == 'Iniciado')
+        .toList();
+    final List<Caso> enProceso = _casos
+        .where((c) => c.estado == 'En proceso')
+        .toList();
+    final List<Caso> finalizados = _casos
+        .where((c) => c.estado == 'Finalizado')
+        .toList();
+
+    return ResponsiveLayout(
+      mobile: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          _buildEstadoHeader('Iniciados (${iniciados.length})'),
+          ..._buildCasosListOrEmpty(iniciados),
+          const SizedBox(height: 16),
+          _buildEstadoHeader('En proceso (${enProceso.length})'),
+          ..._buildCasosListOrEmpty(enProceso),
+          const SizedBox(height: 16),
+          _buildEstadoHeader('Finalizados (${finalizados.length})'),
+          ..._buildCasosListOrEmpty(finalizados),
+        ],
+      ),
+      tablet: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: _buildEstadoColumn(
+              'Iniciados (${iniciados.length})',
+              iniciados,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: _buildEstadoColumn(
+              'En proceso (${enProceso.length})',
+              enProceso,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: _buildEstadoColumn(
+              'Finalizados (${finalizados.length})',
+              finalizados,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEstadoColumn(String title, List<Caso> casos) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: casos.isEmpty
+              ? Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Center(
+                    child: Text(
+                      'Sin casos',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.only(right: 4),
+                  itemCount: casos.length,
+                  itemBuilder: (context, index) => _buildCasoCard(casos[index]),
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCasoCard(Caso caso) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ListTile(
+        title: Text(
+          caso.titulo,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (caso.descripcion != null)
+              Text(
+                caso.descripcion!,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Chip(
+                  label: Text(caso.estado),
+                  backgroundColor: _getEstadoColor(
+                    caso.estado,
+                  ).withOpacity(0.2),
+                  labelStyle: TextStyle(
+                    color: _getEstadoColor(caso.estado),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Chip(
+                  label: Text(caso.tipo),
+                  backgroundColor: Colors.grey.withOpacity(0.2),
+                ),
+              ],
+            ),
+            if (caso.areasAsignadas != null)
+              Text(
+                'Áreas: ${caso.areasAsignadas}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            Text(
+              'Creado: ${_formatDate(caso.fechaCreacion)}',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
+        trailing: const Icon(Icons.arrow_forward_ios),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => CasoDetailScreen(caso: caso),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildEstadoHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        title,
+        style: Theme.of(
+          context,
+        ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  List<Widget> _buildCasosListOrEmpty(List<Caso> casos) {
+    if (casos.isEmpty) {
+      return [
+        Container(
+          padding: const EdgeInsets.all(16),
+          width: double.infinity,
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Center(
+            child: Text('Sin casos', style: TextStyle(color: Colors.grey)),
+          ),
+        ),
+      ];
+    }
+    return casos.map((c) => _buildCasoCard(c)).toList();
   }
 
   String _formatDate(DateTime date) {
