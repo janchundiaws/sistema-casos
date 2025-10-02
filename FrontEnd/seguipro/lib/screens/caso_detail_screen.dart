@@ -53,10 +53,19 @@ class _CasoDetailScreenState extends State<CasoDetailScreen> {
   }) async {
     final rootContext =
         context; // contexto del widget para diálogos posteriores
-    final toController = TextEditingController(text: '');
+    final prefill = baseRecipients.join(', ');
+    final toController = TextEditingController(text: prefill);
     final subjectController = TextEditingController(text: subjectPrefill);
     final bodyController = TextEditingController(text: defaultHtml ?? '');
     String? emailError;
+
+    String listaCorreos = '';
+    _casoDetalle!['areas'].forEach((nombre) {
+      listaCorreos += nombre['listaCorreo'] + ';';
+    });
+
+    toController.text = listaCorreos;
+    setState(() {});
 
     await showDialog(
       context: context,

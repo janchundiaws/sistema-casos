@@ -59,7 +59,7 @@ class _AddSeguimientoScreenState extends State<AddSeguimientoScreen> {
   }) async {
     final rootContext =
         context; // usar contexto del widget para diálogos posteriores
-    final toController = TextEditingController(text: '');
+    final toController = TextEditingController(text: baseRecipients.join(', '));
     final subjectController = TextEditingController(text: subjectPrefill);
     final bodyController = TextEditingController(text: defaultHtml ?? '');
     String? emailError;
