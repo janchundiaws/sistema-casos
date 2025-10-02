@@ -55,6 +55,17 @@ class ApiService {
       await storage.write(key: 'usuario', value: usuario.toString());
       return {'token': token, 'usuario': usuario};
     } catch (e) {
+      if (e is DioException) {
+        final statusCode = e.response?.statusCode;
+        final data = e.response?.data;
+        String message = 'Error en login';
+        if (data is Map<String, dynamic> && data['message'] is String) {
+          message = data['message'];
+        } else if (statusCode == 400) {
+          message = 'Credenciales inválidas';
+        }
+        throw Exception(message);
+      }
       throw Exception('Error en login: $e');
     }
   }

@@ -35,7 +35,7 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      await _apiService.login(
+      var response = await _apiService.login(
         _usernameController.text,
         _passwordController.text,
       );
@@ -47,8 +47,18 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final String errorText = e.toString();
+        String userMessage = 'Ocurrió un error al iniciar sesión';
+        if (errorText.contains('Usuario no encontrado')) {
+          userMessage = 'El usuario no está registrado';
+        } else if (errorText.contains('Credenciales inválidas')) {
+          userMessage = 'Usuario o contraseña incorrectos';
+        } else if (errorText.contains('Timeout') ||
+            errorText.contains('timed out')) {
+          userMessage = 'No se pudo conectar. Intente de nuevo.';
+        }
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text(userMessage), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -151,6 +161,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             return 'Por favor ingrese su contraseña';
                           }
                           return null;
+                        },
+                        onFieldSubmitted: (valor) {
+                          _login();
                         },
                       ),
                       const SizedBox(height: 24),
