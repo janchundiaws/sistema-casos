@@ -35,7 +35,7 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      var response = await _apiService.login(
+      await _apiService.login(
         _usernameController.text,
         _passwordController.text,
       );
