@@ -1,21 +1,6 @@
 version: '3.8'
 
 services:
-  # Base de datos SQL Server
-  database:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: seguipro-db
-    environment:
-      - ACCEPT_EULA=Y
-      - SA_PASSWORD=YourStrong@Passw0rd
-      - MSSQL_PID=Express
-    ports:
-      - "1433:1433"
-    volumes:
-      - db_data:/var/opt/mssql
-    networks:
-      - seguipro-network
-    restart: unless-stopped
 
   # Backend API
   backend:
@@ -23,20 +8,12 @@ services:
       context: ./BackEnd
       dockerfile: Dockerfile
     container_name: seguipro-backend
-    environment:
-      - NODE_ENV=production
-      - PORT=3000
-      - DB_SERVER=database
-      - DB_DATABASE=seguipro
-      - DB_USER=sa
-      - DB_PASSWORD=YourStrong@Passw0rd
-      - JWT_SECRET=your-super-secret-jwt-key-here
+    env_file:
+      - ./BackEnd/.env   # <-- tu archivo .env
     ports:
       - "3000:3000"
     volumes:
       - ./BackEnd/uploads:/app/uploads
-    depends_on:
-      - database
     networks:
       - seguipro-network
     restart: unless-stopped
@@ -49,11 +26,11 @@ services:
   # Frontend Flutter Web
   frontend:
     build:
-      context: ./FrontEnd
+      context: ./FrontEnd/seguipro
       dockerfile: Dockerfile
     container_name: seguipro-frontend
     ports:
-      - "80:80"
+      - "8080:80"
     depends_on:
       - backend
     networks:
